@@ -9,7 +9,7 @@ This example provisions:
 - Shared **Tailscale preferences** and **tags** declared as Terraform locals for consistency across all nodes
 - All Tailscale nodes are configured to launch the **ts-ssh server** but only the **external droplet** is enabled via **ts-ssh-enabled** tag
 
-> Reusing and adapting patterns from the official Tailscale IaC examples: provider version pinning, variable parameterization, `cloud-init` bootstrap, reusable locals, and useful outputs.
+> Reusing and adapting patterns from the official [Tailscale IaC examples](https://github.com/tailscale-dev/examples-infrastructure-as-code): provider version pinning, variable parameterization, `cloud-init` bootstrap, reusable locals, and useful outputs.
 
 ## Prerequisites
 
