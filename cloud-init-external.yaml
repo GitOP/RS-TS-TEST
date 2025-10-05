@@ -10,5 +10,7 @@ runcmd:
   # Generate an auth key from your Admin console
   # https://login.tailscale.com/admin/settings/keys
   # and replace the placeholder below
-  - ['tailscale', 'up', '--auth-key=${TSKEY_EXTERNAL}']
+  - ['sh', '-c', 'tailscale up --authkey=${TSKEY_EXTERNAL}']
+  # Set ts-SSH for all nodes and control with ACL
+  - ['tailscale', 'set', '--ssh']
   - ['tailscale', 'set', '--accept-routes']

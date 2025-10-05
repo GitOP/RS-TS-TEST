@@ -3,15 +3,34 @@ data "digitalocean_ssh_key" "terraform" {
   name = "macos-rsolis-lapm3.pub"
 }
 
+#Prevent errors caused by existing VPC
 resource "random_id" "unique" {
-  byte_length = 4  # produces an 8-character hex string
+    byte_length = 2  # 4-character hex string
+}
+
+locals {
+    subnet_cidr = "10.10.10.0/24"
 }
 
 resource "digitalocean_vpc" "vpc_nyc" {
   name = "nyc3-vpc-${random_id.unique.hex}"
   region = "nyc3"
-  ip_range = "10.10.10.0/24"
+  ip_range = local.subnet_cidr
 }
+
+# There's no clean way to have a private-network only droplet?
+# resource "digitalocean_vpc_nat_gateway" "vpc_nyc-nat" {
+#   name   = "vpc_nyc-nat"
+#   type   = "PUBLIC"
+#   region = "nyc3"
+#   size   = "1"
+#   vpcs {
+#     vpc_uuid = digitalocean_vpc.vpc_nyc.id
+#   }
+#   udp_timeout_seconds  = 30
+#   icmp_timeout_seconds = 30
+#   tcp_timeout_seconds  = 30
+#  }
 
 resource "digitalocean_droplet" "nyc_internal_resource" {
   name = "nyc-internal-resource"
@@ -27,23 +46,23 @@ resource "digitalocean_droplet" "nyc_internal_resource" {
 }
 
 resource "digitalocean_firewall" "block_public" {
-  name = "block-public"
+  name = "block-public-inbound"
 
   droplet_ids = [digitalocean_droplet.nyc_internal_resource.id]
 
   inbound_rule {
-    protocol         = "tcp"
-    port_range       = "all"
-    source_addresses = ["10.10.10.0/24"]  # Only internal
+    protocol = "tcp"
+    port_range = "all"
+    source_addresses = [local.subnet_cidr]  # Internal only
   }
   inbound_rule {
-    protocol         = "udp"
-    port_range       = "all"
-    source_addresses = ["10.10.10.0/24"]  # Only internal
+    protocol = "udp"
+    port_range = "all"
+    source_addresses = [local.subnet_cidr]  # Internal only
   }
   inbound_rule {
     protocol = "icmp"
-    source_addresses = ["10.10.10.0/24"]
+    source_addresses = [local.subnet_cidr]  # Internal only
   }
 
   outbound_rule {
@@ -53,12 +72,12 @@ resource "digitalocean_firewall" "block_public" {
   }
   outbound_rule {
     protocol = "icmp"
-    destination_addresses = ["10.10.10.0/24"]
+    destination_addresses = [local.subnet_cidr]
   }
 }
 
-resource "digitalocean_droplet" "subnet_router" {
-  name = "subnet-router"
+resource "digitalocean_droplet" "subnet_router_1" {
+  name = "subnet-router-1"
   region = digitalocean_vpc.vpc_nyc.region
   size = "s-1vcpu-512mb-10gb"
   image = "ubuntu-25-04-x64"
@@ -68,7 +87,10 @@ resource "digitalocean_droplet" "subnet_router" {
   user_data = templatefile(
                 "${path.module}/cloud-init-router.yaml",
                     { 
-                        TSKEY_ROUTER = var.tskey_router
+                        # Pass key created with the tf tailscale provider to cloud-init
+                        TSKEY_ROUTER = tailscale_tailnet_key.subnet_router_1.key,
+                        # Pass list of routes to be advertised by this node to cloud-init
+                        ADVERTISED_ROUTES = join(",",local.advertised_routes)
                     }
                 )
 
@@ -87,7 +109,8 @@ resource "digitalocean_droplet" "external_resource" {
   user_data = templatefile(
                 "${path.module}/cloud-init-external.yaml",
                     { 
-                        TSKEY_EXTERNAL = var.tskey_external
+                        # Pass key created with the tf tailscale provider to cloud-init
+                        TSKEY_EXTERNAL = tailscale_tailnet_key.external_resource.key
                     }
                 )
   

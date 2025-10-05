@@ -10,8 +10,11 @@ runcmd:
   # Generate an auth key from your Admin console
   # https://login.tailscale.com/admin/settings/keys
   # and replace the placeholder below
-  - ['tailscale', 'up', '--auth-key=${TSKEY_ROUTER}']
+  - ['sh', '-c', 'tailscale up --authkey=${TSKEY_ROUTER}']
+  # Set ts-SSH for all nodes and control with ACL
   - ['tailscale', 'set', '--ssh']
-  - ['tailscale', 'set', '--advertise-routes=10.10.10.0/24']
-  # To enable SNAT in the subnet router
-  - ['tailscale', 'set', '--exit-node-allow-lan-access']
+  - ['tailscale', 'set', '--advertise-routes=${ADVERTISED_ROUTES}']
+  # To control SNAT in the subnet router
+  # - ['tailscale', 'set', '--snat-subnet-routes=true']
+  # Found interesting behavior here?
+  # - ['tailscale', 'set', '--exit-node-allow-lan-access']
