@@ -2,27 +2,26 @@
 
 This example provisions:
 - A DigitalOcean VPC (10.10.10.0/24) in nyc3
-- An internal droplet reachable only inside the VPC
-- A Tailscale subnet router in the same VPC that advertises the VPC subnet
-- A second Tailscale node (external droplet) registered to the same tailnet in tor1 for connectivity tests
-- A Tailscale ACL policy generated dynamically by Terraform from acl.hujson.tftpl
+- An `internal resource` reachable only inside the VPC
+- A Tailscale `subnet router` in the same VPC that advertises the VPC subnet
+- A second Tailscale node `external resource` registered to the same tailnet in tor1 for connectivity tests
+- A Tailscale ACL policy generated dynamically by Terraform from `acl.hujson.tftpl`
 - Shared Tailscale tags declared as Terraform locals for consistency across all nodes
-- All Tailscale nodes are configured to launch the ts-ssh server, but only the external droplet is enabled via the ts-ssh-enabled tag
+- All Tailscale nodes are configured to launch the ts-ssh server, but only the `external resource` is enabled via the ts-ssh-enabled tag
 
 ![alt text](https://github.com/GitOP/RS-TS-TEST/blob/main/assets/digitalocean-tailscale-diagram.png?raw=true)
   
 The project reuses modules from [Tailscale IaC examples](https://github.com/tailscale-dev/examples-infrastructure-as-code):
-- tailscale-install-scripts/: generates bash/cloud-init install scripts for Tailscale (used as-is)
-- digitalocean-linux-droplet/: wraps droplet creation (inspired by azure-linux-vm)
+- **tailscale-install-scripts/**: generates bash/cloud-init install scripts for Tailscale (used with no changes)
+- **digitalocean-linux-droplet/**: wraps droplet creation (inspired by azure-linux-vm)
 
 ## Prerequisites
 
-- DigitalOcean API token (var.digitalocean_token)
-- Tailscale OAuth client credentials (var.tailscale_oauth_client_id, var.tailscale_oauth_client_secret), which the provider uses to create ephemeral tailnet keys for the router and external nodes.
+- DigitalOcean API token `var.digitalocean_token`
+- Tailscale OAuth client credentials `var.tailscale_oauth_client_id`, `var.tailscale_oauth_client_secret` which the provider uses to create ephemeral tailnet keys for the router and external nodes.
 
 Security note:
-Handle API credentials carefully. I use [Doppler](https://www.doppler.com/) (doppler run --name-transformer tf-var -- terraform apply).
-Avoid committing credentials to version control or exposing them in the console.
+Handle API credentials carefully. I use [Doppler](https://www.doppler.com/) (doppler run --name-transformer tf-var -- terraform apply) to avoid committing credentials to version control or exposing them in the console.
 
 ## Initialize and Deploy
 
@@ -35,7 +34,7 @@ terraform apply         # or doppler run --name-transformer tf-var -- terraform 
 Terraform will:
 1. Create a VPC, firewall, and droplets.
 2. Apply the ACL policy to your Tailscale tailnet.
-3. Mint two preauthorized Tailscale auth keys.
+3. Create two preauthorized Tailscale auth keys.
 4. Bootstrap both droplets using the tailscale-install-scripts module via user_data.
 5. Join both nodes to your tailnet and configure routing automatically.
 6. Print useful outputs such as public/private IPs, regions, and the VPC ID.
@@ -106,5 +105,5 @@ Variable | Default (in locals) | Description
 region_nyc | "nyc3" | Region for internal and router droplets
 region_tor | "tor1" | Region for external droplet
 subnet_cidr | "10.10.10.0/24" | CIDR block of the VPC subnet
-droplet_size | "s-1vcpu-512mb-10gb" | Droplet size slug
+droplet_size | "s-1vcpu-512mb-10gb" | [Droplet size slug](https://slugs.do-api.dev/)
 droplet_image | "ubuntu-25-04-x64" | Base image for all droplets
