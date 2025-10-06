@@ -4,12 +4,14 @@ This example provisions:
 - A **DigitalOcean VPC** (`10.10.10.0/24`) in `nyc3`
 - An **internal droplet** reachable only inside the VPC
 - A **Tailscale subnet router** in the same VPC that **advertises the VPC subnet**
-- An **external droplet** in `tor1` for connectivity tests
-- A **Tailscale ACL** policy applied from `acl.hujson.tftpl`
-- Shared **Tailscale preferences** and **tags** declared as Terraform locals for consistency across all nodes
+- A secong Tailscale node **external droplet** registered to the same tailnet `tor1` for connectivity tests
+- A **Tailscale ACL** policy generated dynamically by terraform from `acl.hujson.tftpl`
+- Shared **Tailscale tags** declared as Terraform locals for consistency across all nodes
 - All Tailscale nodes are configured to launch the **ts-ssh server** but only the **external droplet** is enabled via **ts-ssh-enabled** tag
 
-> Reusing and adapting patterns from the official [Tailscale IaC examples](https://github.com/tailscale-dev/examples-infrastructure-as-code): provider version pinning, variable parameterization, `cloud-init` bootstrap, reusable locals, and useful outputs.
+
+  
+> Reusing and adapting patterns from the official [Tailscale IaC examples](https://github.com/tailscale-dev/examples-infrastructure-as-code)
 
 ## Prerequisites
 
@@ -29,27 +31,11 @@ The example now uses a `variables.tf` file to parameterize regions, droplet size
 | `droplet_size` | `"s-1vcpu-512mb-10gb"` | Droplet size slug |
 | `droplet_image` | `"ubuntu-25-04-x64"` | Base image for all droplets |
 
-### Locals
-Inspired on the locals found in the IaC examples, `tailscale.tf` defines shared tags and preferences used by cloud-init and ACLs:
+### Dynamic Tailscale tag generation
+Based on the locals defined in "tailscale.tf", tags are automatically injected to the acl via the Tailscale terraform acl resource, this allows automatic approval of routes based in permissions assigned when tailscale-auth-keys are generated for the node.
 
-```hcl
-locals {
-  {
-        infra          = "tag:infra"
-        exitnode       = "tag:exitnode"
-        appconnector   = "tag:appconnector"
-        subnet_router  = "tag:subnet-router"
-        ssh_enabled    = "tag:ts-ssh-enabled"
-        toronto        = "tag:Toronto"
-        newyork        = "tag:NewYork"
-    }
-
-  tailscale_set_preferences = [
-    "--auto-update",
-    "--ssh",
-    "--advertise-routes=${join(",", local.advertised_routes)}",
-    "--accept-dns=false",
-  ]
+### DigitalOcean Linux Droplet
+Inspired on the IaC examples, a new terraform module `digitalocean-linux-vm` defines new droplets with tailscale installed and tailscale configuration dependant on its **tailscale_set_preferences**:
 
 ## Usage
 
