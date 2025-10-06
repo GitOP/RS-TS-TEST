@@ -61,15 +61,10 @@
     ],
 
     "tagOwners": {
-        
-        // Tailscale subnet-router
-        "tag:subnet-router": ["autogroup:admin"],
-        // Nodes that are allowed to use ts-ssh
-        "tag:ts-ssh-enabled": ["autogroup:admin"],
-        // Devices deployed in Toronto
-        "tag:Toronto": ["autogroup:admin"],
-        // Devices deployed in New York
-        "tag:NewYork": ["autogroup:admin"],
+        // Dynamically generated from Terraform locals
+        %{ for tag in tags ~}
+        "${tag}": ["autogroup:admin"],
+        %{ endfor ~}
         // Tags generated from subnet routes
         %{ for route in routes ~}
         "tag:subnet-${replace(route, "/[./]/", "-")}": ["autogroup:admin"],

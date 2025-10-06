@@ -16,6 +16,41 @@ This example provisions:
 - DigitalOcean API token (`var.digitalocean_token`)
 - Tailscale OAuth client credentials (`var.tailscale_oauth_client_id`, `var.tailscale_oauth_client_secret`), which the provider uses to mint ephemeral **tailnet keys** for the router and external nodes.
 
+## Configuration Highlights
+
+### Variables
+The example now uses a `variables.tf` file to parameterize regions, droplet sizes, and images:
+
+| Variable | Default | Description |
+|-----------|----------|-------------|
+| `region_nyc` | `"nyc3"` | Region for internal and router droplets |
+| `region_tor` | `"tor1"` | Region for external droplet |
+| `subnet_cidr` | `"10.10.10.0/24"` | CIDR block of the VPC subnet |
+| `droplet_size` | `"s-1vcpu-512mb-10gb"` | Droplet size slug |
+| `droplet_image` | `"ubuntu-25-04-x64"` | Base image for all droplets |
+
+### Locals
+Inspired on the locals found in the IaC examples, `tailscale.tf` defines shared tags and preferences used by cloud-init and ACLs:
+
+```hcl
+locals {
+  {
+        infra          = "tag:infra"
+        exitnode       = "tag:exitnode"
+        appconnector   = "tag:appconnector"
+        subnet_router  = "tag:subnet-router"
+        ssh_enabled    = "tag:ts-ssh-enabled"
+        toronto        = "tag:Toronto"
+        newyork        = "tag:NewYork"
+    }
+
+  tailscale_set_preferences = [
+    "--auto-update",
+    "--ssh",
+    "--advertise-routes=${join(",", local.advertised_routes)}",
+    "--accept-dns=false",
+  ]
+
 ## Usage
 
 ```bash

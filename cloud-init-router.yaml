@@ -1,16 +1,23 @@
 #cloud-config
 # The above header must generally appear on the first line of a cloud config
 # file, but all other lines that begin with a # are optional comments.
-
+write_files:
+  - path: /etc/default/tailscale
+    permissions: '0600'
+    content: |
+      TS_KEY=${TS_AUTH_KEY}
+      TAILSCALE_OPTS="${TAILSCALE_OPTS}"
 runcmd:
   # One-command install, from https://tailscale.com/download/
   - ['sh', '-c', 'curl -fsSL https://tailscale.com/install.sh | sh']
   # Set sysctl settings for IP forwarding (useful when configuring an exit node)
-  - ['sh', '-c', "echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf && echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.d/99-tailscale.conf && sudo sysctl -p /etc/sysctl.d/99-tailscale.conf" ]
+  - ['sh', '-c', "echo 'net.ipv4.ip_forward = 1' | tee -a /etc/sysctl.d/99-tailscale.conf && echo 'net.ipv6.conf.all.forwarding = 1' | tee -a /etc/sysctl.d/99-tailscale.conf && sysctl -p /etc/sysctl.d/99-tailscale.conf"]
+    # Enable auto-update
+  - ['sh', '-c', '--auto-update']
   # Generate an auth key from your Admin console
   # https://login.tailscale.com/admin/settings/keys
   # and replace the placeholder below
-  - ['sh', '-c', 'tailscale up --authkey=${TSKEY_ROUTER}']
+  - ['sh', '-c', '. /etc/default/tailscale && tailscale up --authkey=$${TS_KEY} ${TAILSCALE_OPTS}']
   # Set ts-SSH for all nodes and control with ACL
   - ['tailscale', 'set', '--ssh']
   - ['tailscale', 'set', '--advertise-routes=${ADVERTISED_ROUTES}']
@@ -18,3 +25,4 @@ runcmd:
   # - ['tailscale', 'set', '--snat-subnet-routes=true']
   # Found interesting behavior here?
   # - ['tailscale', 'set', '--exit-node-allow-lan-access']
+  

@@ -9,13 +9,13 @@ resource "random_id" "unique" {
 }
 
 locals {
-    subnet_cidr = "10.10.10.0/24"
+    subnet_cidr = var.subnet_cidr
 }
 
 resource "digitalocean_vpc" "vpc_nyc" {
-  name = "nyc3-vpc-${random_id.unique.hex}"
-  region = "nyc3"
-  ip_range = local.subnet_cidr
+  name = "${var.region_nyc}-${random_id.unique.hex}"
+  region = var.region_nyc
+  ip_range = var.subnet_cidr
 }
 
 # There's no clean way to have a private-network only droplet?
@@ -34,9 +34,9 @@ resource "digitalocean_vpc" "vpc_nyc" {
 
 resource "digitalocean_droplet" "nyc_internal_resource" {
   name = "nyc-internal-resource"
-  region = digitalocean_vpc.vpc_nyc.region
-  size = "s-1vcpu-512mb-10gb"
-  image = "ubuntu-25-04-x64"
+  region = var.region_nyc
+  size = var.droplet_size
+  image = var.droplet_image
   monitoring = "true"
   ipv6 = false
 
@@ -78,9 +78,9 @@ resource "digitalocean_firewall" "block_public" {
 
 resource "digitalocean_droplet" "subnet_router_1" {
   name = "subnet-router-1"
-  region = digitalocean_vpc.vpc_nyc.region
-  size = "s-1vcpu-512mb-10gb"
-  image = "ubuntu-25-04-x64"
+  region = var.region_nyc
+  size = var.droplet_size
+  image = var.droplet_image
   monitoring = "true"
   ipv6 = false
 
@@ -88,7 +88,9 @@ resource "digitalocean_droplet" "subnet_router_1" {
                 "${path.module}/cloud-init-router.yaml",
                     { 
                         # Pass key created with the tf tailscale provider to cloud-init
-                        TSKEY_ROUTER = tailscale_tailnet_key.subnet_router_1.key,
+                        TS_AUTH_KEY = tailscale_tailnet_key.subnet_router_1.key,
+                        # Pass tailscale prefs
+                        TAILSCALE_OPTS = join(" ", local.tailscale_set_preferences)
                         # Pass list of routes to be advertised by this node to cloud-init
                         ADVERTISED_ROUTES = join(",",local.advertised_routes)
                     }
@@ -100,9 +102,9 @@ resource "digitalocean_droplet" "subnet_router_1" {
 
 resource "digitalocean_droplet" "external_resource" {
   name = "external-resource"
-  region = "tor1"
-  size = "s-1vcpu-512mb-10gb"
-  image = "ubuntu-25-04-x64"
+  region = var.region_tor
+  size = var.droplet_size
+  image = var.droplet_image
   monitoring = "true"
   ipv6 = false
 
@@ -110,7 +112,9 @@ resource "digitalocean_droplet" "external_resource" {
                 "${path.module}/cloud-init-external.yaml",
                     { 
                         # Pass key created with the tf tailscale provider to cloud-init
-                        TSKEY_EXTERNAL = tailscale_tailnet_key.external_resource.key
+                        TS_AUTH_KEY = tailscale_tailnet_key.external_resource.key
+                        # Pass tailscale prefs
+                        TAILSCALE_OPTS = join(" ", local.tailscale_set_preferences)
                     }
                 )
   
