@@ -5,7 +5,7 @@ output "vpc_id" {
 
 output "subnet_cidr" {
   description = "CIDR of the VPC subnet"
-  value       = local.subnet_cidr
+  value       = digitalocean_vpc.vpc_nyc.ip_range
 }
 
 output "internal_private_ip" {

@@ -5,7 +5,7 @@ This example provisions:
 - An **internal droplet** reachable only inside the VPC
 - A **Tailscale subnet router** in the same VPC that **advertises the VPC subnet**
 - An **external droplet** in `tor1` for connectivity tests
-- A **Tailscale ACL** policy applied from `acl.hujson.tmlp`
+- A **Tailscale ACL** policy applied from `acl.hujson.tftpl`
 - Shared **Tailscale preferences** and **tags** declared as Terraform locals for consistency across all nodes
 - All Tailscale nodes are configured to launch the **ts-ssh server** but only the **external droplet** is enabled via **ts-ssh-enabled** tag
 

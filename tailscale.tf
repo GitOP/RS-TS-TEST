@@ -2,7 +2,7 @@
 # Common tags and preferences for Tailscale nodes
 locals {
     # List of routes we need to approve
-    advertised_routes = [local.subnet_cidr]
+    advertised_routes = [var.subnet_cidr]
     subnet_tags = [for r in local.advertised_routes : "tag:subnet-${replace(r, "/[./]/", "-")}"]
 
     # Logical tags used across ACLs and tailnet keys
@@ -16,15 +16,22 @@ locals {
         newyork        = "tag:newyork"
     }
 
-    tags_subnet_router_1   = [for k in ["infra", "subnet_router", "newyork"] : local.tailscale_acl_tags[k]]
-    tags_external_resource = [for k in ["infra", "ssh_enabled", "toronto"] : local.tailscale_acl_tags[k]]
+    tags_subnet_router_1   = [for k in ["subnet_router", "newyork"] : local.tailscale_acl_tags[k]]
+    tags_external_resource = [for k in ["ssh_enabled", "toronto"] : local.tailscale_acl_tags[k]]
 
-    # CLI preferences commonly used during tailscale up
-    tailscale_set_preferences = [
-        # Seems to be deprecated from up, now only supported with set? 
-        # "--auto-update", 
+    # Node Tailscale preferences
+    tailscale_preferences_subnet_router_1 = [
+        "--auto-update", 
         "--ssh",
         "--accept-dns=false",
+        "--accept-routes",
+        "--advertise-routes=${join(",", local.advertised_routes)}"
+    ]
+    tailscale_preferences_external_resource = [
+        "--auto-update", 
+        "--ssh",
+        "--accept-dns=false",
+        "--accept-routes",
     ]
 }
 
@@ -55,7 +62,7 @@ resource "tailscale_tailnet_key" "external_resource" {
 
 resource "tailscale_acl" "as_hujson" {
     overwrite_existing_content = true
-    acl = templatefile("${path.module}/acl.hujson.tmlp",{
+    acl = templatefile("${path.module}/acl.hujson.tftpl",{
         routes = local.advertised_routes
         tags = values(local.tailscale_acl_tags)
     })

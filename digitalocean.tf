@@ -9,7 +9,10 @@ resource "random_id" "unique" {
 }
 
 locals {
-    subnet_cidr = var.subnet_cidr
+    subnet_router_1_hostname = "subnet-router-1"
+    external_resource_hostname = "external-resource"
+    internal_resource_hostname = "internal-resource"
+
 }
 
 resource "digitalocean_vpc" "vpc_nyc" {
@@ -18,22 +21,8 @@ resource "digitalocean_vpc" "vpc_nyc" {
   ip_range = var.subnet_cidr
 }
 
-# There's no clean way to have a private-network only droplet?
-# resource "digitalocean_vpc_nat_gateway" "vpc_nyc-nat" {
-#   name   = "vpc_nyc-nat"
-#   type   = "PUBLIC"
-#   region = "nyc3"
-#   size   = "1"
-#   vpcs {
-#     vpc_uuid = digitalocean_vpc.vpc_nyc.id
-#   }
-#   udp_timeout_seconds  = 30
-#   icmp_timeout_seconds = 30
-#   tcp_timeout_seconds  = 30
-#  }
-
 resource "digitalocean_droplet" "nyc_internal_resource" {
-  name = "nyc-internal-resource"
+  name = local.internal_resource_hostname
   region = var.region_nyc
   size = var.droplet_size
   image = var.droplet_image
@@ -53,16 +42,16 @@ resource "digitalocean_firewall" "block_public" {
   inbound_rule {
     protocol = "tcp"
     port_range = "all"
-    source_addresses = [local.subnet_cidr]  # Internal only
+    source_addresses = [var.subnet_cidr]  # Internal only
   }
   inbound_rule {
     protocol = "udp"
     port_range = "all"
-    source_addresses = [local.subnet_cidr]  # Internal only
+    source_addresses = [var.subnet_cidr]  # Internal only
   }
   inbound_rule {
     protocol = "icmp"
-    source_addresses = [local.subnet_cidr]  # Internal only
+    source_addresses = [var.subnet_cidr]  # Internal only
   }
 
   outbound_rule {
@@ -72,51 +61,55 @@ resource "digitalocean_firewall" "block_public" {
   }
   outbound_rule {
     protocol = "icmp"
-    destination_addresses = [local.subnet_cidr]
+    destination_addresses = [var.subnet_cidr]
   }
 }
 
+module "tailscale_install_scripts_subnet_router_1" {
+  source = "./tailscale-install-scripts"
+  tailscale_hostname   = local.subnet_router_1_hostname
+  tailscale_auth_key   = tailscale_tailnet_key.subnet_router_1.key
+  tailscale_set_preferences = local.tailscale_preferences_subnet_router_1
+  additional_before_scripts = []
+  additional_after_scripts = []
+
+  depends_on = [ tailscale_tailnet_key.subnet_router_1 ]
+}
+
 resource "digitalocean_droplet" "subnet_router_1" {
-  name = "subnet-router-1"
+  name = local.subnet_router_1_hostname
   region = var.region_nyc
   size = var.droplet_size
   image = var.droplet_image
   monitoring = "true"
   ipv6 = false
 
-  user_data = templatefile(
-                "${path.module}/cloud-init-router.yaml",
-                    { 
-                        # Pass key created with the tf tailscale provider to cloud-init
-                        TS_AUTH_KEY = tailscale_tailnet_key.subnet_router_1.key,
-                        # Pass tailscale prefs
-                        TAILSCALE_OPTS = join(" ", local.tailscale_set_preferences)
-                        # Pass list of routes to be advertised by this node to cloud-init
-                        ADVERTISED_ROUTES = join(",",local.advertised_routes)
-                    }
-                )
+  user_data = module.tailscale_install_scripts_subnet_router_1.ubuntu_install_script
 
   vpc_uuid = digitalocean_vpc.vpc_nyc.id
   ssh_keys = [data.digitalocean_ssh_key.terraform.id]
 }
 
+module "tailscale_install_scripts_external_resource" {
+  source = "./tailscale-install-scripts"
+  tailscale_hostname = local.external_resource_hostname
+  tailscale_auth_key   = tailscale_tailnet_key.external_resource.key
+  tailscale_set_preferences = local.tailscale_preferences_external_resource
+  additional_before_scripts = []
+  additional_after_scripts = []
+
+  depends_on = [ tailscale_tailnet_key.external_resource ]
+}
+
 resource "digitalocean_droplet" "external_resource" {
-  name = "external-resource"
+  name = local.external_resource_hostname
   region = var.region_tor
   size = var.droplet_size
   image = var.droplet_image
   monitoring = "true"
   ipv6 = false
 
-  user_data = templatefile(
-                "${path.module}/cloud-init-external.yaml",
-                    { 
-                        # Pass key created with the tf tailscale provider to cloud-init
-                        TS_AUTH_KEY = tailscale_tailnet_key.external_resource.key
-                        # Pass tailscale prefs
-                        TAILSCALE_OPTS = join(" ", local.tailscale_set_preferences)
-                    }
-                )
+  user_data = module.tailscale_install_scripts_external_resource.ubuntu_install_script
   
   ssh_keys = [data.digitalocean_ssh_key.terraform.id]
 }
