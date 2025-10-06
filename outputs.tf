@@ -15,20 +15,20 @@ output "internal_private_ip" {
 
 output "router_public_ip" {
   description = "Public IPv4 of the subnet router droplet"
-  value       = digitalocean_droplet.subnet_router_1.ipv4_address
+  value       = module.digitalocean_linux_droplet_subnet_router_1.ipv4_address
 }
 
 output "external_public_ip" {
   description = "Public IPv4 of the external resource droplet"
-  value       = digitalocean_droplet.external_resource.ipv4_address
+  value       = module.digitalocean_linux_droplet_external_resource.ipv4_address
 }
 
 output "router_region" {
   description = "Region of the router droplet"
-  value       = digitalocean_droplet.subnet_router_1.region
+  value       = module.digitalocean_linux_droplet_subnet_router_1.region
 }
 
 output "external_region" {
   description = "Region of the external droplet"
-  value       = digitalocean_droplet.external_resource.region
+  value       = module.digitalocean_linux_droplet_external_resource.region
 }

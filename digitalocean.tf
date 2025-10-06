@@ -65,8 +65,15 @@ resource "digitalocean_firewall" "block_public" {
   }
 }
 
-module "tailscale_install_scripts_subnet_router_1" {
-  source = "./tailscale-install-scripts"
+module "digitalocean_linux_droplet_subnet_router_1" {
+  source = "./digitalocean-linux-droplet"
+  name = local.subnet_router_1_hostname
+  location = var.region_nyc
+  size = var.droplet_size
+  image = var.droplet_image
+  vpc_uuid = digitalocean_vpc.vpc_nyc.id
+  ssh_keys = [data.digitalocean_ssh_key.terraform.id]
+
   tailscale_hostname   = local.subnet_router_1_hostname
   tailscale_auth_key   = tailscale_tailnet_key.subnet_router_1.key
   tailscale_set_preferences = local.tailscale_preferences_subnet_router_1
@@ -76,40 +83,19 @@ module "tailscale_install_scripts_subnet_router_1" {
   depends_on = [ tailscale_tailnet_key.subnet_router_1 ]
 }
 
-resource "digitalocean_droplet" "subnet_router_1" {
-  name = local.subnet_router_1_hostname
-  region = var.region_nyc
+module "digitalocean_linux_droplet_external_resource" {
+  source = "./digitalocean-linux-droplet"
+  name = local.external_resource_hostname
+  location = var.region_tor
   size = var.droplet_size
   image = var.droplet_image
-  monitoring = "true"
-  ipv6 = false
-
-  user_data = module.tailscale_install_scripts_subnet_router_1.ubuntu_install_script
-
-  vpc_uuid = digitalocean_vpc.vpc_nyc.id
   ssh_keys = [data.digitalocean_ssh_key.terraform.id]
-}
-
-module "tailscale_install_scripts_external_resource" {
-  source = "./tailscale-install-scripts"
+  
   tailscale_hostname = local.external_resource_hostname
   tailscale_auth_key   = tailscale_tailnet_key.external_resource.key
   tailscale_set_preferences = local.tailscale_preferences_external_resource
   additional_before_scripts = []
   additional_after_scripts = []
-
-  depends_on = [ tailscale_tailnet_key.external_resource ]
-}
-
-resource "digitalocean_droplet" "external_resource" {
-  name = local.external_resource_hostname
-  region = var.region_tor
-  size = var.droplet_size
-  image = var.droplet_image
-  monitoring = "true"
-  ipv6 = false
-
-  user_data = module.tailscale_install_scripts_external_resource.ubuntu_install_script
   
-  ssh_keys = [data.digitalocean_ssh_key.terraform.id]
+  depends_on = [ tailscale_tailnet_key.external_resource ]
 }
