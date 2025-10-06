@@ -49,16 +49,3 @@ variable "tailscale_oauth_client_secret" {
     sensitive = true
     description = "Tailscale OAuth client secret" 
 }
-
-# Now creating auth-keys with tf tailscale provider
-# variable "tskey_external" {
-#     type = string
-#     sensitive = true
-#     description = "Tailscale node key for non-vpc node"
-# }
-
-# variable "tskey_router" {
-#     type = string
-#     sensitive = true
-#     description = "Tailscale node key for subnet-router node"
-# }

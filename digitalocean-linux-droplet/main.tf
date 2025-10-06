@@ -19,6 +19,7 @@ resource "digitalocean_droplet" "do-linux-droplet" {
 
   user_data = module.tailscale_install_scripts.ubuntu_install_script
 
+  # Value can't be empty - null if not defined
   vpc_uuid = var.vpc_uuid != "" ? var.vpc_uuid : null
   ssh_keys = var.ssh_keys
 

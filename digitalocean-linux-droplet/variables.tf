@@ -6,10 +6,6 @@ variable "location" {
   description = "The location to use"
   type        = string
 }
-# variable "resource_tags" {
-#   description = "Tags to assign to all resources created by this module"
-#   type        = map(string)
-# }
 
 #
 # Variables for virtual machine resources
@@ -18,10 +14,7 @@ variable "name" {
   description = "The name to assign to the virtual machine"
   type        = string
 }
-# variable "primary_subnet_id" {
-#   description = "The primary subnet (typically PUBLIC) to assign to the virtual machine"
-#   type        = string
-# }
+
 variable "vpc_uuid" {
   description = "The vpc to assign to the virtual machine"
   type        = string
@@ -36,6 +29,6 @@ variable "image" {
   type        = string
 }
 variable "ssh_keys" {
-  description = "The name of the SSH public key to assign to the virtual machine"
+  description = "DigitalOcean SSH key IDs or fingerprints to add to the droplet"
   type        = list(string)
 }
