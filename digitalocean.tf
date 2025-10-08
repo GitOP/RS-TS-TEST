@@ -8,28 +8,23 @@ resource "random_id" "unique" {
     byte_length = 2  # 4-character hex string
 }
 
-locals {
-    subnet_router_1_hostname = "subnet-router-1"
-    external_resource_hostname = "external-resource"
-    internal_resource_hostname = "internal-resource"
+resource "digitalocean_vpc" "vpc" {
+  for_each = { for s in var.subnets : s.name => s }
 
-}
-
-resource "digitalocean_vpc" "vpc_nyc" {
-  name = "${var.region_nyc}-${random_id.unique.hex}"
-  region = var.region_nyc
-  ip_range = var.subnet_cidr
+  name     = "vpc-${each.key}-${random_id.unique.hex}"
+  region   = each.value.region
+  ip_range = each.value.cidr
 }
 
 resource "digitalocean_droplet" "nyc_internal_resource" {
-  name = local.internal_resource_hostname
-  region = var.region_nyc
+  name = "internal-resource"
+  region = digitalocean_vpc.vpc["nyc3"].region
   size = var.droplet_size
   image = var.droplet_image
   monitoring = "true"
   ipv6 = false
 
-  vpc_uuid = digitalocean_vpc.vpc_nyc.id
+  vpc_uuid = digitalocean_vpc.vpc["nyc3"].id
 
   ssh_keys = [data.digitalocean_ssh_key.terraform.id]
 }
@@ -42,16 +37,16 @@ resource "digitalocean_firewall" "block_public" {
   inbound_rule {
     protocol = "tcp"
     port_range = "all"
-    source_addresses = [var.subnet_cidr]  # Internal only
+    source_addresses = [digitalocean_vpc.vpc["nyc3"].ip_range]  # Internal only
   }
   inbound_rule {
     protocol = "udp"
     port_range = "all"
-    source_addresses = [var.subnet_cidr]  # Internal only
+    source_addresses = [digitalocean_vpc.vpc["nyc3"].ip_range]  # Internal only
   }
   inbound_rule {
     protocol = "icmp"
-    source_addresses = [var.subnet_cidr]  # Internal only
+    source_addresses = [digitalocean_vpc.vpc["nyc3"].ip_range]  # Internal only
   }
 
   outbound_rule {
@@ -61,37 +56,47 @@ resource "digitalocean_firewall" "block_public" {
   }
   outbound_rule {
     protocol = "icmp"
-    destination_addresses = [var.subnet_cidr]
+    destination_addresses = [digitalocean_vpc.vpc["nyc3"].ip_range]
   }
 }
 
-module "digitalocean_linux_droplet_subnet_router_1" {
+module "digitalocean_linux_droplet_subnet_router" {
+  for_each = { for s in var.subnets : s.name => s }
+
   source = "./digitalocean-linux-droplet"
-  name = local.subnet_router_1_hostname
-  location = var.region_nyc
+  
+  name = "ts-router-${each.key}"
+  location = each.value.region
   size = var.droplet_size
   image = var.droplet_image
-  vpc_uuid = digitalocean_vpc.vpc_nyc.id
+  vpc_uuid = digitalocean_vpc.vpc[each.key].id
   ssh_keys = [data.digitalocean_ssh_key.terraform.id]
 
-  tailscale_hostname   = local.subnet_router_1_hostname
-  tailscale_auth_key   = tailscale_tailnet_key.subnet_router_1.key
-  tailscale_set_preferences = local.tailscale_preferences_subnet_router_1
+  # tailscale_hostname   = "subnet-router-${each.key}"
+  tailscale_auth_key   = tailscale_tailnet_key.subnet_router_key[each.key].key
+
+  tailscale_set_preferences = [
+      "--auto-update",
+      "--ssh",
+      "--accept-dns=false",
+      "--accept-routes",
+      "--advertise-routes=${join(",", [each.value.cidr])}"
+    ]
   additional_before_scripts = []
   additional_after_scripts = []
 
-  depends_on = [ tailscale_tailnet_key.subnet_router_1 ]
+  depends_on = [ tailscale_tailnet_key.subnet_router_key ]
 }
 
 module "digitalocean_linux_droplet_external_resource" {
   source = "./digitalocean-linux-droplet"
-  name = local.external_resource_hostname
+  name = "external-resource"
   location = var.region_tor
   size = var.droplet_size
   image = var.droplet_image
   ssh_keys = [data.digitalocean_ssh_key.terraform.id]
   
-  tailscale_hostname = local.external_resource_hostname
+  # tailscale_hostname = "external-resource"
   tailscale_auth_key   = tailscale_tailnet_key.external_resource.key
   tailscale_set_preferences = local.tailscale_preferences_external_resource
   additional_before_scripts = []

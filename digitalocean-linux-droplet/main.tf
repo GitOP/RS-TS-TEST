@@ -2,7 +2,7 @@ module "tailscale_install_scripts" {
   source = "../tailscale-install-scripts"
 
   tailscale_auth_key        = var.tailscale_auth_key
-  tailscale_hostname        = var.tailscale_hostname
+  tailscale_hostname        = var.name
   tailscale_set_preferences = var.tailscale_set_preferences
 
   additional_before_scripts = var.additional_before_scripts

@@ -1,21 +1,36 @@
 # ---- Parametrization vars
 
-variable "region_nyc" {
-  description = "DigitalOcean region for internal and router droplets"
-  type        = string
-  default     = "nyc3"
+variable "subnets" {
+  description = "List of subnet routers to deploy"
+  type = list(object({
+    name = string
+    region = string
+    cidr = string
+  }))
+  default = [
+    {
+      name = "nyc3"
+      region = "nyc3"
+      cidr = "10.10.10.0/24"
+    },
+    # Demo multi-subnetrouters in different regions
+    {
+      name = "sfo3"
+      region = "sfo3"
+      cidr = "10.20.20.0/24"
+    },
+    {
+      name = "sgp"
+      region = "sgp1"
+      cidr = "10.30.30.0/24"
+    }
+  ]
 }
 
 variable "region_tor" {
   description = "DigitalOcean region for external droplet"
   type        = string
   default     = "tor1"
-}
-
-variable "subnet_cidr" {
-  description = "VPC subnet CIDR range"
-  type        = string
-  default     = "10.10.10.0/24"
 }
 
 variable "droplet_size" {

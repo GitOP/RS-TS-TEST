@@ -1,11 +1,11 @@
 output "vpc_id" {
   description = "ID of the VPC created in nyc3"
-  value       = digitalocean_vpc.vpc_nyc.id
+  value       = { for k, m in digitalocean_vpc.vpc: k => m.id }
 }
 
-output "subnet_cidr" {
+output "subnet_cidrs" {
   description = "CIDR of the VPC subnet"
-  value       = digitalocean_vpc.vpc_nyc.ip_range
+  value       = {for k, m in digitalocean_vpc.vpc: k => m.ip_range }
 }
 
 output "internal_private_ip" {
@@ -13,9 +13,9 @@ output "internal_private_ip" {
   value       = digitalocean_droplet.nyc_internal_resource.ipv4_address_private
 }
 
-output "router_public_ip" {
+output "router_public_ips" {
   description = "Public IPv4 of the subnet router droplet"
-  value       = module.digitalocean_linux_droplet_subnet_router_1.ipv4_address
+  value       = {for k, m in module.digitalocean_linux_droplet_subnet_router : k=> m.ipv4_address }
 }
 
 output "external_public_ip" {
@@ -23,9 +23,9 @@ output "external_public_ip" {
   value       = module.digitalocean_linux_droplet_external_resource.ipv4_address
 }
 
-output "router_region" {
+output "router_regions" {
   description = "Region of the router droplet"
-  value       = module.digitalocean_linux_droplet_subnet_router_1.region
+  value       = {for k, m in module.digitalocean_linux_droplet_subnet_router : m.name => m.region }
 }
 
 output "external_region" {

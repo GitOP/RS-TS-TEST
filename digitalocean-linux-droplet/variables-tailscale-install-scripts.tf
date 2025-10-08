@@ -5,10 +5,10 @@ variable "tailscale_auth_key" {
   description = "Tailscale auth key to authenticate the device"
   type        = string
 }
-variable "tailscale_hostname" {
-  description = "Hostname to assign to the device"
-  type        = string
-}
+# variable "tailscale_hostname" {
+#   description = "Hostname to assign to the device"
+#   type        = string
+# }
 variable "tailscale_set_preferences" {
   description = "Preferences to run via `tailscale set ...`. Do not include `tailscale set`."
   type        = set(string)

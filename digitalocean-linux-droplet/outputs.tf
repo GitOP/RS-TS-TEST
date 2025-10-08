@@ -17,3 +17,8 @@ output "region" {
   description = "Region where the droplet is deployed"
   value       = digitalocean_droplet.do-linux-droplet.region
 }
+
+output "name" {
+  description = "Name of the droplet"
+  value       = digitalocean_droplet.do-linux-droplet.name
+}
