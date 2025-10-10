@@ -13,17 +13,17 @@ variable "subnets" {
       region = "nyc3"
       cidr = "10.10.10.0/24"
     },
-    # Demo multi-subnetrouters in different regions
-    {
-      name = "sfo3"
-      region = "sfo3"
-      cidr = "10.20.20.0/24"
-    },
-    {
-      name = "sgp"
-      region = "sgp1"
-      cidr = "10.30.30.0/24"
-    }
+    # # Demo multi-subnetrouters in different regions
+    # {
+    #   name = "sfo3"
+    #   region = "sfo3"
+    #   cidr = "10.20.20.0/24"
+    # },
+    # {
+    #   name = "sgp"
+    #   region = "sgp1"
+    #   cidr = "10.30.30.0/24"
+    # }
   ]
 }
 

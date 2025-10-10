@@ -97,13 +97,23 @@ This allows automatic approval of routes based on the permissions assigned when 
 
 ## Configuration Highlights
 
-The project uses variables and locals to parameterize regions, droplet sizes, and images.  
-You can override these in a `.tfvars` file or environment variables.
+The project is fully parameterized to support **multiple regions and subnet routers**, making it easy to scale the Tailnet topology by simply extending variable lists or maps.  
+All values can be customized via a `.tfvars` file or environment variables.
 
-Variable | Default (in locals) | Description
-----------|---------------------|-------------
-region_nyc | "nyc3" | Region for internal and router droplets
-region_tor | "tor1" | Region for external droplet
-subnet_cidr | "10.10.10.0/24" | CIDR block of the VPC subnet
-droplet_size | "s-1vcpu-512mb-10gb" | [Droplet size slug](https://slugs.do-api.dev/)
-droplet_image | "ubuntu-25-04-x64" | Base image for all droplets
+| **Variable / Local** | **Default** | **Description** |
+|-----------------------|-------------|-----------------|
+| `subnets` | `[ { name = "nyc3", region = "nyc3", cidr = "10.10.10.0/24" } ]` | List of subnet router definitions. Each entry defines a region, name, and CIDR block. Terraform loops over this list to provision a router and its associated VPC. |
+| `droplet_size` | `"s-1vcpu-512mb-10gb"` | [Droplet size slug](https://slugs.do-api.dev/) used for all droplets (routers, internal, and external). |
+| `droplet_image` | `"ubuntu-25-04-x64"` | Base image for all Tailscale nodes. |
+| `tailscale_tags` | `[ "tag:subnet-router", "tag:infra" ]` | Default Tailscale tags applied to nodes. |
+| `tailscale_acl_template` | `"acl.hujson.tftpl"` | Template used to dynamically generate the ACL policy based on subnets and tags. |
+
+### Example override in `terraform.tfvars`
+
+```hcl
+subnets = [
+  { name = "nyc3", region = "nyc3", cidr = "10.10.10.0/24" },
+  { name = "sfo1", region = "sfo3", cidr = "10.20.20.0/24" },
+  { name = "tor1", region = "tor1", cidr = "10.40.40.0/24" }
+]
+```
